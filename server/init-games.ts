@@ -19,13 +19,35 @@ interface GameEntry {
 }
 
 async function runMigrations() {
+  console.log('Running database migrations...');
   try {
-    console.log('Running database migrations...');
-    await execAsync('npx drizzle-kit push:pg');
-    console.log('Migrations completed successfully.');
-  } catch (error) {
-    console.error('Error running migrations:', error);
-    throw error;
+    const { stdout, stderr } = await execAsync('npx drizzle-kit migrate');
+    
+    if (stdout) {
+      console.log('Migrations stdout:\n', stdout);
+    }
+    
+    if (stderr) {
+      // Drizzle-kit sometimes outputs informational messages to stderr,
+      // so we log it but don't necessarily throw an error unless the command fails.
+      console.warn('Migrations stderr:\n', stderr);
+    }
+    
+    // Check if stderr contains typical error indicators if needed,
+    // but execAsync should throw if the command exits with a non-zero code.
+    console.log('Migrations command executed.'); // Removed "successfully" until we're sure based on output or lack of thrown error.
+
+  } catch (error: any) { // Catching as 'any' to access error.stdout/stderr if present
+    console.error('ERROR running migrations command.');
+    if (error.stdout) {
+      console.error('Migration Error STDOUT:\n', error.stdout);
+    }
+    if (error.stderr) {
+      console.error('Migration Error STDERR:\n', error.stderr);
+    }
+    // It's good to also log the original error object for more details
+    console.error('Full migration error object:\n', error); 
+    throw new Error('Migration process failed.'); // Re-throw to stop further execution
   }
 }
 
