@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, json, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, boolean, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -118,7 +118,7 @@ export const games = pgTable("games", {
   categories: json("categories").$type<string[]>().notNull(),
   platforms: json("platforms").$type<string[]>().notNull(),
   contact: text("contact"),
-  downloads: integer("downloads"),
+  downloads: bigint("downloads", { mode: "number" }),
 });
 
 // Create insert schema for games

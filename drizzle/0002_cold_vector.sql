@@ -1,0 +1,1 @@
+ALTER TABLE "games" ALTER COLUMN "downloads" SET DATA TYPE bigint;

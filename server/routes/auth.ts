@@ -65,38 +65,56 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
-    // If this is the initial signup (not the setup completion)
+    let hashedPasswordToUse: string | undefined;
+
+    // If this is the initial signup (not the setup completion step)
     if (!userData.language || !userData.region) {
+      if (!userData.password) {
+        return res.status(400).json({ message: 'Password is required for initial signup step' });
+      }
       // Store the username and hashed password for later use
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      const pendingAuth = {
-        ...userData,
+      const pendingAuthData = { // Renamed to avoid conflict
+        username: userData.username, // Only store necessary fields
         password: hashedPassword
+        // Do not store other userData like language/region here as they are not provided yet
       };
       
-      // Store hashed password in session
-      req.session.pendingAuth = pendingAuth;
+      // Store necessary pending auth data in session
+      req.session.pendingAuth = pendingAuthData;
       
       return res.json({ redirect: 'setup' });
+    } else {
+      // Language and region are present, this is either setup completion or direct signup
+      if (req.session.pendingAuth) {
+        if (req.session.pendingAuth.username !== userData.username) {
+          return res.status(400).json({ message: 'Session data mismatch. Please try signing up again.' });
+        }
+        hashedPasswordToUse = req.session.pendingAuth.password;
+        delete req.session.pendingAuth; // Clear pending auth data
+      } else {
+        // No pending session, this must be a direct signup with all data
+        if (!userData.password) {
+          return res.status(400).json({ message: 'Password is required for direct signup' });
+        }
+        hashedPasswordToUse = await bcrypt.hash(userData.password, 10);
+      }
     }
 
-    // Get the stored pending auth data with hashed password
-    const pendingAuth = req.session.pendingAuth;
-    if (!pendingAuth) {
-      return res.status(400).json({ message: 'No pending authentication data found' });
+    if (!hashedPasswordToUse) {
+      // This case should ideally not be reached if logic above is correct
+      // but serves as a fallback.
+      return res.status(400).json({ message: 'Missing password or session. Unable to create user.' });
     }
 
-    // Create new user with the previously hashed password
-    const userDataWithHash = {
-      ...userData,
-      password: pendingAuth.password // Use the previously hashed password
+    // Create new user with the determined hashed password
+    const newUserPayload = {
+      ...userData, // Contains username, language, region, etc.
+      password: hashedPasswordToUse 
     };
 
     // Create the new user
-    const newUser = await storage.createUser(userDataWithHash);
-    
-    // Clear pending auth data
-    delete req.session.pendingAuth;
+    const newUser = await storage.createUser(newUserPayload);
     
     // Log the user in after creation
     req.logIn(newUser, (err) => {
@@ -107,7 +125,13 @@ router.post('/signup', async (req, res) => {
       
       // Don't send password back to client
       const { password, ...userWithoutPassword } = newUser;
-      return res.status(201).json(userWithoutPassword);
+      return res.status(201).json({ 
+        user: {
+          ...userWithoutPassword,
+          isAdmin: !!userWithoutPassword.isAdmin 
+        },
+        message: 'User created successfully' // Provide a success message
+      });
     });
   } catch (error) {
     console.error('Signup error:', error);

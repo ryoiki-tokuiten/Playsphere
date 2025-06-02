@@ -15,6 +15,13 @@
       "when": 1740596242772,
       "tag": "0001_quiet_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748901955343,
+      "tag": "0002_cold_vector",
+      "breakpoints": true
     }
   ]
 }
