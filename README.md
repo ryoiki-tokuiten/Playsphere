@@ -57,11 +57,15 @@ The necessary environment variables are:
     # Example using psql
     psql -U YOUR_DB_USER -d YOUR_DB_NAME -f setup_database.sql
     ```
-4.  **Seed the database:** This will populate initial data, including games from `Games.json` and potentially create default users.
+4.  **Seed and Migrate Database:** This command now performs several actions:
+    *   Seeds default users (e.g., "5crore", "dee.2") if they don't already exist.
+    *   Ensures the database schema is up-to-date by applying any pending Drizzle migrations.
+    *   Clears all existing data from the `games` table.
+    *   Populates the `games` table with data from `Games.json`.
     ```bash
     npm run db:seed
     ```
-    *Note: The seed script might require the admin user `ryoikitokuiten` to exist or might create it. If you need to set a specific user as admin, you might need an additional SQL command like `UPDATE users SET "isAdmin" = TRUE WHERE username = 'your_admin_username';` after seeding, if not handled by the seed script.*
+    *Note on Admin User: The default users are created with `isAdmin` set to `false`. If you need to designate an admin user (e.g., for user 'ryoikitokuiten' if it's one of the seeded users, or another user you create), you may need to run an SQL command like `UPDATE users SET "isAdmin" = TRUE WHERE username = 'your_admin_username';` after running the seed script.*
 
 ### 6. Running the Application
 

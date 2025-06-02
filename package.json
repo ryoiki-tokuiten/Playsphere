@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push:pg",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx server/migrate.ts",
-    "db:seed": "tsx server/seed.ts",
+    "db:seed": "tsx server/seed.ts && tsx server/init-games.ts",
     "init-games": "tsx server/init-games.ts"
   },
   "dependencies": {

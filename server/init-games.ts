@@ -84,10 +84,17 @@ async function initGames() {
     console.log('Database initialization completed successfully!');
   } catch (error) {
     console.error('Error initializing database:', error);
-  } finally {
-    process.exit(0);
+    throw error; // Re-throw the error
   }
+  // Removed finally block with process.exit(0)
 }
 
 // Run the initialization function
-initGames(); 
+initGames()
+  .then(() => {
+    console.log('Game initialization script completed.');
+  })
+  .catch(error => {
+    console.error('An error occurred during game initialization script execution:', error);
+    process.exitCode = 1;
+  });
