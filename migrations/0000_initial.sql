@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  "profilePicture" TEXT,
+  language TEXT NOT NULL,
+  region TEXT NOT NULL,
+  "gamesPlayed" JSONB NOT NULL,
+  "currentGame" TEXT NOT NULL,
+  "currentGameId" TEXT NOT NULL,
+  "lastActive" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  "fromUserId" INTEGER NOT NULL REFERENCES users(id),
+  "toUserId" INTEGER NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+); 

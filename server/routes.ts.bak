@@ -1,0 +1,99 @@
+import type { Express } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { insertUserSchema, insertMessageSchema } from "@shared/schema";
+import { setupWebSocket } from "./websocket";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
+import crypto from "crypto";
+
+// Configure multer for file uploads
+const storage_uploads = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), "uploads");
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueFilename = `${crypto.randomUUID()}${path.extname(file.originalname)}`;
+    cb(null, uniqueFilename);
+  }
+});
+
+const upload = multer({ 
+  storage: storage_uploads,
+  limits: {
+    fileSize: 2 * 1024 * 1024 // 2MB limit
+  }
+});
+
+export function registerRoutes(app: Express): Server {
+  // User endpoints
+  app.get("/api/users", async (req, res) => {
+    const users = await storage.getActiveUsers();
+    res.json(users);
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    const user = await storage.getUser(parseInt(req.params.id));
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  });
+
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const updates = insertUserSchema.partial().parse(req.body);
+      const user = await storage.updateUser(parseInt(req.params.id), updates);
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ message: "Invalid update data" });
+    }
+  });
+
+  // Message endpoints
+  app.get("/api/messages/:fromUserId/:toUserId", async (req, res) => {
+    const messages = await storage.getMessages(
+      parseInt(req.params.fromUserId),
+      parseInt(req.params.toUserId)
+    );
+    res.json(messages);
+  });
+
+  // Image upload endpoint
+  app.post("/api/upload/image", upload.single("image"), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Generate the URL for the uploaded file
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
+      
+      res.json({
+        url: fileUrl,
+        success: true
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Serve static files from uploads directory
+  app.use("/uploads", (req, res, next) => {
+    // Set cache headers for uploaded files
+    res.setHeader("Cache-Control", "public, max-age=31536000");
+    next();
+  }, express.static(path.join(process.cwd(), "uploads")));
+
+  const httpServer = createServer(app);
+  setupWebSocket(httpServer);
+
+  return httpServer;
+}
