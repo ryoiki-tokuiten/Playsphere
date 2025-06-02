@@ -32,11 +32,24 @@ async function runMigrations() {
 async function seedGames() {
   try {
     // Read the Games.json file
-    const gamesData = JSON.parse(
+    const originalGamesData = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), 'Games.json'), 'utf-8')
     ) as GameEntry[];
 
-    console.log(`Found ${gamesData.length} games to import.`);
+    console.log(`Found ${originalGamesData.length} entries in Games.json.`);
+
+    // De-duplicate gamesData
+    const seenGameNames = new Set<string>();
+    const uniqueGamesList: GameEntry[] = [];
+    for (const gameEntry of originalGamesData) {
+      if (!seenGameNames.has(gameEntry.Game)) {
+        seenGameNames.add(gameEntry.Game);
+        uniqueGamesList.push(gameEntry);
+      } else {
+        console.log(`Skipping duplicate game entry from Games.json: ${gameEntry.Game}`);
+      }
+    }
+    console.log(`Found ${uniqueGamesList.length} unique games to import after de-duplication.`);
 
     // Clear existing games
     console.log('Clearing existing games data...');
@@ -45,12 +58,14 @@ async function seedGames() {
 
     // Insert games in batches to avoid overwhelming the database
     const batchSize = 100;
-    const batches = Math.ceil(gamesData.length / batchSize);
+    // Use uniqueGamesList for batching
+    const batches = Math.ceil(uniqueGamesList.length / batchSize); 
 
     for (let i = 0; i < batches; i++) {
       const start = i * batchSize;
-      const end = Math.min((i + 1) * batchSize, gamesData.length);
-      const batch = gamesData.slice(start, end);
+      // Use uniqueGamesList for slicing and length
+      const end = Math.min((i + 1) * batchSize, uniqueGamesList.length); 
+      const batch = uniqueGamesList.slice(start, end); 
 
       // Transform data to match our schema
       const gamesToInsert = batch.map(game => ({
@@ -62,8 +77,10 @@ async function seedGames() {
       }));
 
       // Insert the batch
-      await db.insert(games).values(gamesToInsert);
-      console.log(`Imported games ${start + 1} to ${end}.`);
+      if (gamesToInsert.length > 0) { // Ensure there's something to insert
+        await db.insert(games).values(gamesToInsert);
+        console.log(`Imported batch ${i + 1}/${batches}: games ${start + 1} to ${end} from unique list.`);
+      }
     }
 
     console.log('Games import completed successfully!');
@@ -84,10 +101,17 @@ async function initGames() {
     console.log('Database initialization completed successfully!');
   } catch (error) {
     console.error('Error initializing database:', error);
-  } finally {
-    process.exit(0);
+    throw error; // Re-throw the error
   }
+  // Removed finally block with process.exit(0)
 }
 
 // Run the initialization function
-initGames(); 
+initGames()
+  .then(() => {
+    console.log('Game initialization script completed.');
+  })
+  .catch(error => {
+    console.error('An error occurred during game initialization script execution:', error);
+    process.exitCode = 1;
+  });

@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push:pg",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx server/migrate.ts",
-    "db:seed": "tsx server/seed.ts",
+    "db:seed": "tsx server/seed.ts && tsx server/init-games.ts",
     "init-games": "tsx server/init-games.ts"
   },
   "dependencies": {
@@ -85,7 +85,8 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.30.4",
+    "dotenv-cli": "^8.0.0",
+    "drizzle-kit": "^0.30.6",
     "esbuild": "^0.24.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
