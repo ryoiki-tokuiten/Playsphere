@@ -18,39 +18,6 @@ interface GameEntry {
   Downloads?: number;
 }
 
-async function runMigrations() {
-  console.log('Running database migrations...');
-  try {
-    const { stdout, stderr } = await execAsync('npx drizzle-kit migrate');
-    
-    if (stdout) {
-      console.log('Migrations stdout:\n', stdout);
-    }
-    
-    if (stderr) {
-      // Drizzle-kit sometimes outputs informational messages to stderr,
-      // so we log it but don't necessarily throw an error unless the command fails.
-      console.warn('Migrations stderr:\n', stderr);
-    }
-    
-    // Check if stderr contains typical error indicators if needed,
-    // but execAsync should throw if the command exits with a non-zero code.
-    console.log('Migrations command executed.'); // Removed "successfully" until we're sure based on output or lack of thrown error.
-
-  } catch (error: any) { // Catching as 'any' to access error.stdout/stderr if present
-    console.error('ERROR running migrations command.');
-    if (error.stdout) {
-      console.error('Migration Error STDOUT:\n', error.stdout);
-    }
-    if (error.stderr) {
-      console.error('Migration Error STDERR:\n', error.stderr);
-    }
-    // It's good to also log the original error object for more details
-    console.error('Full migration error object:\n', error); 
-    throw new Error('Migration process failed.'); // Re-throw to stop further execution
-  }
-}
-
 async function seedGames() {
   try {
     // Read the Games.json file
@@ -112,28 +79,25 @@ async function seedGames() {
   }
 }
 
-async function initGames() {
+async function setupGames() {
   try {
-    // Run migrations first
-    await runMigrations();
-    
     // Then seed games
     await seedGames();
     
-    console.log('Database initialization completed successfully!');
+    console.log('Database setup completed successfully!');
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('Error setting up database:', error);
     throw error; // Re-throw the error
   }
   // Removed finally block with process.exit(0)
 }
 
-// Run the initialization function
-initGames()
+// Run the setup function
+setupGames()
   .then(() => {
-    console.log('Game initialization script completed.');
+    console.log('Game setup script completed.');
   })
   .catch(error => {
-    console.error('An error occurred during game initialization script execution:', error);
+    console.error('An error occurred during game setup script execution:', error);
     process.exitCode = 1;
   });

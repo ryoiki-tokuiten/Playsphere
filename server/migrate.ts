@@ -18,14 +18,14 @@ async function main() {
 
   console.log('Database URL:', process.env.DATABASE_URL);
   console.log('Current directory:', __dirname);
-  console.log('Migrations folder:', join(__dirname, '..', 'migrations'));
+  console.log('Migrations folder:', join(__dirname, '..', 'drizzle'));
 
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const db = drizzle(pool);
 
   try {
     console.log('Running migrations...');
-    await migrate(db, { migrationsFolder: join(__dirname, '..', 'migrations') });
+    await migrate(db, { migrationsFolder: join(__dirname, '..', 'drizzle') });
     console.log('Migrations completed successfully!');
 
     // Verify the tables

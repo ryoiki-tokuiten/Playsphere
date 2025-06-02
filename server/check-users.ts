@@ -4,6 +4,10 @@
 import { db } from './db';
 import { users } from '@shared/schema';
 
+function isBcryptHash(str: string) {
+  return /^\$2[ab]\$\d+\$/.test(str) && str.length === 60;
+}
+
 async function checkUsers() {
   try {
     console.log('Checking users in database...');
@@ -13,9 +17,18 @@ async function checkUsers() {
     
     // Print user data
     allUsers.forEach(user => {
+      let passwordStatus = "Unknown";
+      if (!user.password) {
+        passwordStatus = "Empty";
+      } else if (isBcryptHash(user.password)) {
+        passwordStatus = "Hashed";
+      } else {
+        passwordStatus = "Not Hashed (Potential Issue)";
+      }
+
       console.log('\nUser:', {
         username: user.username,
-        password: user.password.substring(0, 10) + '...',  // Only show start of password
+        passwordStatus: passwordStatus,
         isAdmin: user.isAdmin
       });
     });

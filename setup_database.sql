@@ -4,7 +4,7 @@ CREATE TABLE "games" (
 	"categories" json NOT NULL,
 	"platforms" json NOT NULL,
 	"contact" text,
-	"downloads" integer,
+	"downloads" bigint,
 	CONSTRAINT "games_name_unique" UNIQUE("name")
 );
 

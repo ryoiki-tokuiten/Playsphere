@@ -109,10 +109,25 @@ app.use('/api/videos', videosRouter);
 
 // Error handling
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', err);
+  console.error('Error Details:', err); // Keep detailed server-side logging
+
   const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-  res.status(status).json({ message });
+  let responseMessage = "An unexpected error occurred. Please try again later."; // Generic production message
+
+  if (process.env.NODE_ENV !== 'production') {
+    // In development, be more verbose
+    responseMessage = err.message || "Internal Server Error";
+  }
+  // Optional: If you have custom operational errors, you might add:
+  // else if (err.isOperational) {
+  //   responseMessage = err.message;
+  // }
+
+  res.status(status).json({ 
+    error: { 
+      message: responseMessage
+    }
+  });
 });
 
 // Start server
